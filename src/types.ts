@@ -1,4 +1,5 @@
-import { EventCallable, StoreWritable } from "effector";
+import { EventCallable, Store, StoreWritable } from "effector";
+import { ChangeEvent } from "react";
 import { z, ZodRawShape, ZodTypeAny } from "zod";
 
 export type RawShapeToObj<T extends ZodRawShape> = {
@@ -9,9 +10,13 @@ export type Fields<T extends ZodRawShape> = {
   [key in keyof T]: Field<z.infer<T[key]>>;
 };
 
+export type FormErrors<T extends ZodRawShape> = Record<keyof T, string> | null;
+
 export type Form<T extends ZodRawShape> = {
   fields: Fields<T>;
-  formValues: StoreWritable<RawShapeToObj<T>>;
+  $formValues: Store<RawShapeToObj<T>>;
+  $formErrors: Store<FormErrors<T>>;
+  $isValid: Store<boolean>;
 };
 
 export type FieldUnit<TValue extends ZodTypeAny, TName extends string> = {
@@ -32,3 +37,20 @@ export type FieldUnits<T extends ZodRawShape> = {
 } & {
   [key in keyof T as `${key & string}Value`]: StoreWritable<z.infer<T[key]>>;
 };
+
+export interface RegisterReturn<T extends ZodRawShape, TName extends keyof T> {
+  name: TName;
+  value: z.infer<T[TName]>;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+}
+
+export interface FormControl<T extends ZodRawShape> {
+  register: <TName extends keyof T>(name: TName) => RegisterReturn<T, TName>;
+  formErrors: FormErrors<T>;
+  formValues: RawShapeToObj<T>;
+}
+
+export interface ControllerField<T extends ZodRawShape>
+  extends RegisterReturn<T, keyof T> {
+  error?: string;
+}

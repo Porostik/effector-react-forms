@@ -1,11 +1,13 @@
 import { ZodRawShape } from "zod";
-import { useUnit } from "effector-react";
-import { FieldUnits, Form, RawShapeToObj } from "../types";
+import { Form, FieldUnits, RawShapeToObj } from "../types";
 import { ChangeEvent, FormEvent } from "react";
+import { useUnit } from "effector-react";
 
 export const useForm = <T extends ZodRawShape>(form: Form<T>) => {
-  const { formValues } = useUnit({
-    formValues: form.formValues,
+  const { formValues, formErrors, isValid } = useUnit({
+    formValues: form.$formValues,
+    formErrors: form.$formErrors,
+    isValid: form.$isValid,
   });
 
   const { ...fields } = useUnit({
@@ -25,11 +27,10 @@ export const useForm = <T extends ZodRawShape>(form: Form<T>) => {
     };
   };
 
-  const register = (name: keyof T) => ({
+  const register = <TName extends keyof T>(name: TName) => ({
     name,
     onChange: (e: ChangeEvent<HTMLInputElement>) => {
       const handler = fields[`onChange${name as string}`];
-
       if (typeof handler === "function") {
         handler(e.target.value);
       }
@@ -38,8 +39,15 @@ export const useForm = <T extends ZodRawShape>(form: Form<T>) => {
   });
 
   return {
+    control: {
+      register,
+      formValues,
+      formErrors,
+    },
     handleSubmit,
     formValues,
     register,
+    formErrors,
+    isValid,
   };
 };
